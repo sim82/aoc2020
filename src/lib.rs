@@ -1,3 +1,5 @@
+pub mod password_grammar;
+
 #[cfg(test)]
 mod tests {
     #[test]
