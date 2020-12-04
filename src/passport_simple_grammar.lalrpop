@@ -1,0 +1,13 @@
+use crate::passport::{Entry, LenUnit};
+
+grammar;
+
+
+//pub Lines = Line*;
+Entry = <NonSpace>":"<NonSpace>;
+pub Passport = Entry*;
+
+
+NonSpace: String = <s:r"[a-zA-Z0-9#]+"> => String::from(s);
+//NumDec: i64 = <n:r"[0-9]+"> => n.parse().unwrap();
+//Char: Char = <c:r"[a-z]"> => c.parse().unwrap();
