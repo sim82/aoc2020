@@ -4,14 +4,12 @@ fn main() {
     let mut input = String::new();
     std::io::stdin().lock().read_to_string(&mut input).unwrap();
     let rowbin = |c| match c {
-        'F' => 0,
         'B' => 1,
-        _ => panic!("invalid"),
+        _ => 0,
     };
     let colbin = |c| match c {
         'R' => 1,
-        'L' => 0,
-        _ => panic!("invalid"),
+        _ => 0,
     };
     let allseats: HashSet<_> = input
         .lines()
@@ -21,14 +19,15 @@ fn main() {
                 .take(7)
                 .map(rowbin)
                 .enumerate()
-                .fold(0, |acc, (i, c)| acc | (c << (6 - i)));
+                .map(|(i, c)| (c << (6 - i)))
+                .sum::<i32>();
             let column = line
                 .chars()
                 .skip(7)
-                .take(3)
                 .map(colbin)
                 .enumerate()
-                .fold(0, |acc, (i, c)| acc | (c << (2 - i)));
+                .map(|(i, c)| (c << (2 - i)))
+                .sum::<i32>();
 
             row * 8 + column
         })
