@@ -2,10 +2,15 @@
 use std::{collections::HashSet, io::Read};
 
 fn union(group: &str) -> usize {
-    let mut answers: Vec<_> = group.replace("\n", "").chars().collect();
-    answers.sort();
-    answers.dedup();
-    answers.len()
+    group
+        .replace("\n", "")
+        .chars()
+        .collect::<HashSet<_>>()
+        .len()
+    // let mut answers: Vec<_> = group.replace("\n", "").chars().collect();
+    // answers.sort();
+    // answers.dedup();
+    // answers.len()
 }
 
 fn intersection(group: &str) -> usize {
