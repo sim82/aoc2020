@@ -5,6 +5,7 @@ extern crate lalrpop_util;
 lalrpop_mod!(pub password_grammar);
 lalrpop_mod!(pub passport_grammar);
 lalrpop_mod!(pub passport_simple_grammar);
+lalrpop_mod!(pub bag_grammar);
 
 pub mod passport {
     #[derive(Debug)]
@@ -22,6 +23,18 @@ pub mod passport {
         Ecl,
         Pid,
         Cid,
+    }
+}
+pub mod bag {
+    #[derive(Debug, Clone)]
+    pub struct Content {
+        pub color: String,
+        pub num: usize,
+    }
+    #[derive(Debug, Clone)]
+    pub struct Policy {
+        pub color: String,
+        pub content: Option<Vec<Content>>,
     }
 }
 

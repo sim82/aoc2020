@@ -1,0 +1,27 @@
+use crate::bag::{Content, Policy};
+
+grammar;
+pub Lines = Policy*;
+Policy : Policy = {
+    <color:Color> "bags contain" <content:Comma<Content>> "." => Policy { color, content: Some(content) },
+    <color:Color> "bags contain no other bags." => Policy { color, content: None }
+}
+
+Content : Content = {
+    <num:NumDec> <color:Color> "bags" => Content { color, num },
+    "1" <color:Color> "bag" => Content {color, num: 1},
+}
+String: String = <s:r"[a-z]+"> => String::from(s);
+NumDec: usize = <n:r"[0-9]+"> => n.parse().unwrap();
+Color : String = <s1:String> <s2:String> => format!("{} {}",s1, s2);
+
+Comma<T>: Vec<T> = { // (1)
+    <v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
