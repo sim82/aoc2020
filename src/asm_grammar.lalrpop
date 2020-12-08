@@ -1,0 +1,16 @@
+use crate::vm::Op;
+
+grammar;
+
+pub Program = Op*;
+
+Op : Op = {
+    "nop" <n:NumDec> => Op::Nop(n),
+    "acc" <n:NumDec> => Op::Acc(n),
+    "jmp" <n:NumDec> => Op::Jmp(n),
+};
+
+NumDec = {PosNumDec, NegNumDec};
+
+PosNumDec: i64 = <n:r"\+[0-9]+"> => n.parse().unwrap();
+NegNumDec: i64 = <n:r"\-[0-9]+"> => n.parse().unwrap();

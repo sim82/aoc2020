@@ -6,6 +6,7 @@ lalrpop_mod!(pub password_grammar);
 lalrpop_mod!(pub passport_grammar);
 lalrpop_mod!(pub passport_simple_grammar);
 lalrpop_mod!(pub bag_grammar);
+lalrpop_mod!(pub asm_grammar);
 
 pub mod passport {
     #[derive(Debug)]
@@ -37,6 +38,8 @@ pub mod bag {
         pub content: Option<Vec<Content>>,
     }
 }
+
+pub mod vm;
 
 #[cfg(test)]
 mod tests {
