@@ -21,9 +21,9 @@ fn main() {
     println!("{:?}", program);
 
     let mut vm = Vm::new(program.clone());
-    vm.hooks.push(Box::new(ExecutedTwice {}));
-    vm.hooks.push(Box::new(hooks::Tracing {}));
-    vm.run();
+    let mut hooks: Vec<Box<dyn Hook>> =
+        vec![Box::new(ExecutedTwice {}), Box::new(hooks::Tracing {})];
+    vm.run(Some(&mut hooks));
 
     for i in 0..program.len() {
         let mut program = program.clone();
@@ -35,8 +35,8 @@ fn main() {
             x => x.clone(),
         };
         let mut vm = Vm::new(program);
-        vm.hooks.push(Box::new(ExecutedTwice {}));
-        if vm.run() {
+        let mut hooks: Vec<Box<dyn Hook>> = vec![Box::new(ExecutedTwice {})];
+        if vm.run(Some(&mut hooks)) {
             println!("success: {} {}", i, vm.acc);
         }
     }

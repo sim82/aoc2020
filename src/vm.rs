@@ -12,7 +12,6 @@ pub trait Hook {
 pub struct Vm {
     pub program: Vec<Op>,
     pub hit_count: Vec<usize>,
-    pub hooks: Vec<Box<dyn Hook>>,
     pub counter: usize,
     pub acc: i64,
 }
@@ -23,13 +22,12 @@ impl Vm {
         Vm {
             program,
             hit_count,
-            hooks: Vec::new(),
             counter: 0,
             acc: 0,
         }
     }
 
-    pub fn run(&mut self) -> bool {
+    pub fn run(&mut self, mut hooks: Option<&mut Vec<Box<dyn Hook>>>) -> bool {
         enum Cont {
             Jmp(i64),
             Next,
@@ -44,9 +42,9 @@ impl Vm {
                 }
                 Op::Jmp(offs) => Cont::Jmp(offs),
             };
-            for bp in self.hooks.iter() {
-                if bp.check(self) {
-                    return false;
+            if let Some(hooks) = hooks.as_mut() {
+                if hooks.iter_mut().any(|hook| hook.check(self)) {
+                    break;
                 }
             }
             self.counter = match cont {
@@ -60,7 +58,6 @@ impl Vm {
                 }
             };
         }
-        println!("terminated");
         self.counter >= self.program.len()
     }
 }
