@@ -2,10 +2,19 @@ use std::{
     collections::{HashMap, HashSet},
     io::BufRead,
 };
-
+const NEIGHBORS: [(i32, i32); 8] = [
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+    (-1, 0),
+    (1, 0),
+    (-1, 1),
+    (0, 1),
+    (1, 1),
+];
 fn main() {
     let lines: Vec<_> = std::io::stdin().lock().lines().collect();
-    let mut seats: HashMap<(i32, i32), bool> = lines
+    let seats: HashMap<(i32, i32), bool> = lines
         .iter()
         .enumerate()
         .flat_map(move |(y, line)| {
@@ -25,30 +34,17 @@ fn main() {
 fn part1(mut seats: HashMap<(i32, i32), bool>) {
     // print_seats(&seats);
     // println!("seats: {:?}", seats);
-    let neighbors = [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-    ];
     loop {
         let mut new_seats = seats.clone();
         for ((x, y), state) in seats.iter() {
-            // for (nx, ny) in neighbors.iter() {
-
-            // }
             *new_seats.get_mut(&(*x, *y)).unwrap() = if !state {
-                !neighbors
+                !NEIGHBORS
                     .iter()
-                    .any(|(nx, ny)| seats.get(&(x + nx, y + ny)).cloned().unwrap_or(false))
+                    .any(|(nx, ny)| *seats.get(&(x + nx, y + ny)).unwrap_or(&false))
             } else {
-                neighbors
+                NEIGHBORS
                     .iter()
-                    .filter(|(nx, ny)| seats.get(&(x + nx, y + ny)).cloned().unwrap_or(false))
+                    .filter(|(nx, ny)| *seats.get(&(x + nx, y + ny)).unwrap_or(&false))
                     .count()
                     < 4
             };
@@ -73,27 +69,14 @@ fn part2(mut seats: HashMap<(i32, i32), bool>) {
     let maxy = seats.keys().map(|(_, y)| *y).max().unwrap();
     // print_seats(&seats);
     // println!("seats: {:?}", seats);
-    let neighbors = [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-    ];
     loop {
         let mut new_seats = seats.clone();
         for ((x, y), state) in seats.iter() {
             let mut visible = 0;
-            for (nx, ny) in neighbors.iter() {
+            for (nx, ny) in NEIGHBORS.iter() {
                 for i in 1.. {
-                    let nx = i * *nx;
-                    let ny = i * *ny;
-
-                    let x = x + (nx * 1);
-                    let y = y + (ny * 1);
+                    let x = x + (nx * i);
+                    let y = y + (ny * i);
                     if x < 0 || y < 0 || x > maxx || y > maxy {
                         break;
                     }
