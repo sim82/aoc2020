@@ -1,19 +1,14 @@
-use std::io::BufRead;
+use std::iter::once;
 fn main() {
     // part one solved in libreoffice...
 
-    let input = {
-        let mut input = vec![0usize; 1];
-        input.extend(
-            std::io::stdin()
-                .lock()
-                .lines()
-                .map(|l| l.unwrap().parse::<usize>().unwrap()),
-        );
-        input.sort();
-        input.push(input.last().unwrap() + 3);
-        input
-    };
+    let mut input = aoc2020::map_input_vec(|l| l.parse::<usize>().unwrap());
+    input.sort();
+    // add 0 and last+3 at start and end
+    let input = once(0)
+        .chain(input.iter().cloned())
+        .chain(once(input.last().unwrap() + 3))
+        .collect::<Vec<_>>();
 
     println!("{:?}", input);
     // dynamic programming:
