@@ -76,6 +76,18 @@ pub mod math {
         pub fn manhattan(&self) -> i32 {
             self.x().abs() + self.y().abs()
         }
+        pub fn rotate_right90(&self) -> Vec2 {
+            // matrix:
+            // x      0       -1
+            // y      1        0
+            Vec2(self.1, -self.0)
+        }
+        pub fn rotate_left90(&self) -> Vec2 {
+            // matrix:
+            // x       0       1
+            // y      -1       0
+            Vec2(-self.1, self.0)
+        }
     }
 
     impl ops::Add for Vec2 {
@@ -123,6 +135,7 @@ pub mod math {
             }
         }
     }
+
     #[test]
     fn test_add() {
         assert_eq!(Vec2(0, 0) + Vec2(2, 3), Vec2(2, 3));
