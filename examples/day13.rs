@@ -42,6 +42,7 @@ fn main() {
 
     // let input = [(3, 0), (4, 3), (5, 4)];
     if true {
+        println!("input: {:?}", input);
         println!("res: {:?}", chinese_remainder(&input[..]));
     }
 }
@@ -67,6 +68,7 @@ fn chinese_remainder_naive(input: &[(i64, i64)]) {
 }
 
 fn egcd(a: i64, b: i64) -> (i64, i64, i64) {
+    println!("egcd: {} {}", a, b);
     if a == 0 {
         (b, 0, 1)
     } else {
@@ -77,8 +79,8 @@ fn egcd(a: i64, b: i64) -> (i64, i64, i64) {
 
 fn mod_inv(x: i64, n: i64) -> Option<i64> {
     let x0 = x;
-    let (g, x, _) = egcd(x, n);
-    println!("egcd: {} {} -> {} {}", x0, n, g, x);
+    let (g, x, y) = egcd(x, n);
+    println!("egcd: {} {} -> {} {} {}", x0, n, g, x, y);
     if g == 1 {
         Some((x % n + n) % n)
     } else {
@@ -90,7 +92,7 @@ fn chinese_remainder(input: &[(i64, i64)]) -> Option<i64> {
     // 'inspired by (TM)' https://rosettacode.org/wiki/Chinese_remainder_theorem#Rust
     let prod = input.iter().map(|(m, _)| *m).product::<i64>();
 
-    if !false {
+    if false {
         // compulive functional disorder version
         Some(
             input
@@ -108,6 +110,8 @@ fn chinese_remainder(input: &[(i64, i64)]) -> Option<i64> {
         let mut sum = 0;
         for (m, r) in input {
             let p = prod / *m;
+
+            println!("mod inv: {} {} -> {}", p, m, mod_inv(p, *m)?);
             sum += r * mod_inv(p, *m)? * p;
         }
 
