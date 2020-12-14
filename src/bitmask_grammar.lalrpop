@@ -1,0 +1,16 @@
+use crate::bitmask::Op;
+
+grammar;
+
+pub Program = Op*;
+
+Op = {
+    Mask,
+    Mem
+};
+
+Mask : Op = "mask" "=" <mask:Bitmask> => Op::Mask(mask);
+Mem : Op = "mem" "[" <addr:NumDec> "]" "=" <value:NumDec> => Op::Mem(addr,value);
+
+NumDec: u64 = <n:r"[0-9]{1,35}"> => n.parse().unwrap();
+Bitmask: String = <m:r"[01X]{36}"> => m.into();

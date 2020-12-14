@@ -7,6 +7,7 @@ lalrpop_mod!(pub passport_grammar);
 lalrpop_mod!(pub passport_simple_grammar);
 lalrpop_mod!(pub bag_grammar);
 lalrpop_mod!(pub asm_grammar);
+lalrpop_mod!(pub bitmask_grammar);
 
 pub mod passport {
     #[derive(Debug)]
@@ -40,6 +41,14 @@ pub mod bag {
 }
 
 pub mod vm;
+
+pub mod bitmask {
+    #[derive(Debug, Clone)]
+    pub enum Op {
+        Mask(String),
+        Mem(u64, u64),
+    }
+}
 
 use std::{io::BufRead, iter::FromIterator};
 pub fn map_input_vec<F, B>(f: F) -> Vec<B>
