@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{
+    hash_map::Entry::{Occupied, Vacant},
+    HashMap,
+};
 
 fn main() {
     let input = [18, 11, 9, 0, 5, 1];
@@ -14,12 +17,12 @@ fn main() {
     let start = (input.len() - 1) as u32;
     for last_turn in start..30000000u32 {
         let d = match last_turn_for_num.entry(last) {
-            std::collections::hash_map::Entry::Occupied(mut x) => {
+            Occupied(mut x) => {
                 let old_value = *x.get();
                 x.insert(last_turn);
                 last_turn - old_value // last was said in 'old_value' => distance between last_turn and old_value
             }
-            std::collections::hash_map::Entry::Vacant(x) => {
+            Vacant(x) => {
                 x.insert(last_turn);
                 0 // last was not said before => 0
             }
