@@ -50,15 +50,14 @@ fn simulate<T, F>(
         let mut candidates = HashSet::<T>::new();
         for v in domain.iter() {
             let neighbors = get_neighbors(v);
-            candidates.extend(neighbors.difference(&domain));
-
             let active = neighbors.intersection(&domain).count();
             if survive.contains(&active) {
                 new_domain.insert(*v);
             }
+            candidates.extend(neighbors);
         }
 
-        for v in candidates.iter() {
+        for v in candidates.difference(&domain) {
             let neighbors = get_neighbors(v);
             let active = neighbors.intersection(&domain).count();
             if spawn.contains(&active) {
@@ -96,5 +95,5 @@ fn main() {
     println!("3d");
     simulate::<Vec3, _>(domain_3d, neighbors_3d, 6, 3..=3, 2..=3);
     println!("4d");
-    simulate::<Vec4, _>(domain_4d, neighbors_4d, 6, 3..=3, 2..=3);
+    simulate::<Vec4, _>(domain_4d, neighbors_4d, 12, 3..=3, 2..=3);
 }
