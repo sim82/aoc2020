@@ -1,7 +1,5 @@
 #![feature(iterator_fold_self)]
 
-use aoc2020::ticket::Entry;
-
 use regex::{Captures, Regex};
 use std::{collections::HashMap, io::Read};
 use std::{collections::HashSet, io::BufRead};
