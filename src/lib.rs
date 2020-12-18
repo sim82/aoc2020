@@ -8,7 +8,7 @@ lalrpop_mod!(pub passport_simple_grammar);
 lalrpop_mod!(pub bag_grammar);
 lalrpop_mod!(pub asm_grammar);
 lalrpop_mod!(pub bitmask_grammar);
-
+lalrpop_mod!(pub badmath_grammar);
 pub mod passport {
     #[derive(Debug)]
     pub enum LenUnit {
@@ -47,6 +47,17 @@ pub mod bitmask {
     pub enum Op {
         Mask(String),
         Mem(u64, u64),
+    }
+}
+
+pub mod badmath {
+    #[derive(Debug, Clone)]
+    pub enum Term {
+        Num(i64),
+        Op(Box<Term>, char, Box<Term>),
+    }
+    pub fn binop(t1: Term, op: char, t2: Term) -> Term {
+        Term::Op(Box::new(t1), op, Box::new(t2))
     }
 }
 

@@ -1,0 +1,26 @@
+use crate::badmath::Term;
+use crate::badmath::binop;
+
+grammar;
+
+pub Terms = Term*;
+
+
+Term : Term = Tier<MulOp,AddTerm>;
+AddTerm : Term = Tier<AddOp,Term2>;
+
+Term2 : Term = {
+    "(" <Term> ")" => <>,
+    <NumDec> => Term::Num(<>),
+};
+
+Tier<Op,NextTier>: Term = {
+    Tier<Op,NextTier> Op NextTier => binop(<>),
+    NextTier
+}; 
+
+// Op: char = <o:r"[\+\*]"> => o.chars().nth(0).unwrap();
+AddOp: char = <o:r"[\+]"> => o.chars().nth(0).unwrap();
+MulOp: char = <o:r"[\*]"> => o.chars().nth(0).unwrap();
+
+NumDec: i64 = <n:r"[0-9]+"> => n.parse().unwrap();
