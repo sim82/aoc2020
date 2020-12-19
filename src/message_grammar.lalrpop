@@ -2,13 +2,12 @@ use crate::message::{Node,Element};
 
 grammar;
 
-// pub Elements = Element*;
+pub Elements = Element*;
 
+// ';' makes Element* LR(1) parsable (must be inserted into the input by preprocessing or tokenizer)
 pub Element :Element = {
-    Rule,
-    <String> => Element::Message(<>),
-    
-
+    <Rule> ";",
+    <String> ";" => Element::Message(<>),
 };
 
 Rule : Element = <n:NumDec> ":" <r:StrRule> => Element::Rule(n,r);

@@ -1,5 +1,8 @@
-use aoc2020::message::{Element, Node};
 use aoc2020::message_grammar;
+use aoc2020::{
+    message::{Element, Node},
+    semicolonized_input,
+};
 use regex::Regex;
 use std::{
     collections::HashMap,
@@ -54,20 +57,15 @@ fn main() {
     let mut rules = HashMap::new();
     let mut messages = Vec::new();
 
-    for line in std::io::stdin().lock().lines() {
-        let line = line.unwrap();
-        if line.is_empty() {
-            continue;
-        }
-        let element = message_grammar::ElementParser::new()
-            .parse(&line[..])
-            .unwrap();
-
+    let elements = message_grammar::ElementsParser::new()
+        .parse(&semicolonized_input())
+        .unwrap();
+    for element in elements.iter() {
         println!("element: {:?}", element);
 
         match element {
             Element::Rule(i, node) => {
-                rules.insert(i, node);
+                rules.insert(*i, node.clone());
             }
             Element::Message(msg) => messages.push(msg),
         }
