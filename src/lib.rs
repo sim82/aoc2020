@@ -9,6 +9,7 @@ lalrpop_mod!(pub bag_grammar);
 lalrpop_mod!(pub asm_grammar);
 lalrpop_mod!(pub bitmask_grammar);
 lalrpop_mod!(pub badmath_grammar);
+lalrpop_mod!(pub message_grammar);
 pub mod passport {
     #[derive(Debug)]
     pub enum LenUnit {
@@ -58,6 +59,20 @@ pub mod badmath {
     }
     pub fn binop(t1: Term, op: char, t2: Term) -> Term {
         Term::Op(Box::new(t1), op, Box::new(t2))
+    }
+}
+
+pub mod message {
+    #[derive(Debug, Clone)]
+    pub enum Element {
+        Rule(i64, Node),
+        Message(String),
+    }
+    #[derive(Debug, Clone)]
+    pub enum Node {
+        Seq(Vec<i64>),
+        Or(Box<Node>, Box<Node>),
+        String(String),
     }
 }
 

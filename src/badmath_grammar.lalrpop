@@ -3,23 +3,28 @@ use crate::badmath::binop;
 
 grammar;
 
-pub Terms = Term*;
+pub V1Terms = V1Term*;
 
+V1Term = Tier<Op,ParenTerm<V1Term,NumTerm>>;
 
-Term : Term = Tier<MulOp,AddTerm>;
-AddTerm : Term = Tier<AddOp,Term2>;
+pub V2Terms = MulTerm*;
 
-Term2 : Term = {
-    "(" <Term> ")" => <>,
-    <NumDec> => Term::Num(<>),
+MulTerm : Term = Tier<MulOp,AddTerm>;
+AddTerm : Term = Tier<AddOp,ParenTerm<MulTerm,NumTerm>>;
+
+ParenTerm<TopTier,NextTier> : Term = {
+    "(" <TopTier> ")" => <>,
+    NextTier,
 };
+
+NumTerm : Term = <NumDec> => Term::Num(<>);
 
 Tier<Op,NextTier>: Term = {
     Tier<Op,NextTier> Op NextTier => binop(<>),
     NextTier
 }; 
 
-// Op: char = <o:r"[\+\*]"> => o.chars().nth(0).unwrap();
+Op = {AddOp,MulOp};
 AddOp: char = <o:r"[\+]"> => o.chars().nth(0).unwrap();
 MulOp: char = <o:r"[\*]"> => o.chars().nth(0).unwrap();
 
