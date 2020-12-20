@@ -113,9 +113,24 @@ pub fn semicolonized_input() -> String {
     code
 }
 
+pub fn skip_empty_input() -> Vec<String> {
+    std::io::stdin()
+        .lock()
+        .lines()
+        .filter_map(|l| {
+            let l = l.unwrap();
+            if !l.is_empty() {
+                Some(l)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 pub mod math {
     use std::ops;
-    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
     pub struct Vec2(pub i32, pub i32);
 
     impl Vec2 {
