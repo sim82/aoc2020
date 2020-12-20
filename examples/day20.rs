@@ -176,6 +176,7 @@ fn main() {
     for (pos, tile) in assignment.iter() {
         println!("{:?} -> {}", pos, tile.id);
     }
+    closed.clear();
     for y in 1..11 {
         for x in 1..11 {
             let pos = Vec2(x, y);
@@ -189,7 +190,9 @@ fn main() {
                 .collect::<HashSet<_>>();
 
             for tile in tiles.iter() {
-                if edge_set.intersection(&tile.edge_id_set()).count() == 2 {
+                if !closed.contains(&tile.id)
+                    && edge_set.intersection(&tile.edge_id_set()).count() == 2
+                {
                     println!("next: {:?} {:?}", pos, tile);
                     assignment.insert(pos, tile);
                 }
