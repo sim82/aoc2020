@@ -1,0 +1,32 @@
+use crate::message::{Node,Element};
+
+grammar;
+
+pub Elements = Element*;
+
+// ';' makes Element* LR(1) parsable (must be inserted into the input by preprocessing or tokenizer)
+pub Element :Element = {
+    <Rule> ";",
+    <String> ";" => Element::Message(<>),
+};
+
+Rule : Element = <n:NumDec> ":" <r:StrRule> => Element::Rule(n,r);
+
+StrRule : Node = {
+    "\"" <String> "\"" => Node::String(<>),
+    OrRule,
+};
+
+OrRule :Node = {
+    <n1:OrRule> "|" <n2:SeqRule> => Node::Or(Box::new(n1), Box::new(n2)),
+    SeqRule,
+
+};
+
+SeqRule : Node = {
+    <NumDec+> => Node::Seq(<>)
+};
+
+NumDec: i64 = <n:r"[0-9]+"> => n.parse().unwrap();
+// QString: Node = <s:"\"[ab]\""> => Node::String(s.into());
+String: String = <s:r"[ab]+"> => s.into();

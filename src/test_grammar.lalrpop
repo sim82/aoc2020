@@ -1,0 +1,7 @@
+grammar;
+
+pub Rule0 = Rule1*;
+
+Rule1 = {
+    "a" ":" "a"+ "\n"
+};

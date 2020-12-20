@@ -4,9 +4,9 @@ use std::{collections::HashSet, hash::Hash, io::BufRead, iter::Extend, ops::Rang
 fn neighbors_3d(v: &Vec3) -> HashSet<Vec3> {
     let mut res = HashSet::new();
     res.reserve(26);
-    for z in [-1, 0, 1].iter().cloned() {
-        for y in [-1, 0, 1].iter().cloned() {
-            for x in [-1, 0, 1].iter().cloned() {
+    for z in -1..=1 {
+        for y in -1..=1 {
+            for x in -1..=1 {
                 if x == 0 && y == 0 && z == 0 {
                     continue;
                 }
@@ -20,10 +20,10 @@ fn neighbors_3d(v: &Vec3) -> HashSet<Vec3> {
 fn neighbors_4d(v: &Vec4) -> HashSet<Vec4> {
     let mut res = HashSet::new();
     res.reserve(80);
-    for w in [-1, 0, 1].iter().cloned() {
-        for z in [-1, 0, 1].iter().cloned() {
-            for y in [-1, 0, 1].iter().cloned() {
-                for x in [-1, 0, 1].iter().cloned() {
+    for w in -1..=1 {
+        for z in -1..=1 {
+            for y in -1..=1 {
+                for x in -1..=1 {
                     if x == 0 && y == 0 && z == 0 && w == 0 {
                         continue;
                     }
@@ -35,15 +35,11 @@ fn neighbors_4d(v: &Vec4) -> HashSet<Vec4> {
     res
 }
 
-fn simulate<T, F>(
-    mut domain: HashSet<T>,
-    get_neighbors: F,
-    max: i32,
-    spawn: RangeInclusive<usize>,
-    survive: RangeInclusive<usize>,
-) where
+fn simulate<T, F, R>(mut domain: HashSet<T>, get_neighbors: F, max: i32, rules: R)
+where
     T: Eq + Hash + Clone + Copy + PartialEq,
     F: Fn(&T) -> HashSet<T>,
+    R: Fn(bool, usize) -> bool,
 {
     for i in 1..=max {
         let mut new_domain = HashSet::<T>::new();
@@ -51,7 +47,8 @@ fn simulate<T, F>(
         for v in domain.iter() {
             let neighbors = get_neighbors(v);
             let active = neighbors.intersection(&domain).count();
-            if survive.contains(&active) {
+
+            if rules(true, active) {
                 new_domain.insert(*v);
             }
             candidates.extend(neighbors);
@@ -60,7 +57,7 @@ fn simulate<T, F>(
         for v in candidates.difference(&domain) {
             let neighbors = get_neighbors(v);
             let active = neighbors.intersection(&domain).count();
-            if spawn.contains(&active) {
+            if rules(false, active) {
                 new_domain.insert(*v);
             }
         }
@@ -92,8 +89,12 @@ fn main() {
             }
         }));
     }
+    let rules = |alive: bool, neighbors: usize| match alive {
+        false => (3..=3).contains(&neighbors),
+        true => (2..=3).contains(&neighbors),
+    };
     println!("3d");
-    simulate::<Vec3, _>(domain_3d, neighbors_3d, 6, 3..=3, 2..=3);
+    simulate::<Vec3, _, _>(domain_3d, neighbors_3d, 6, rules);
     println!("4d");
-    simulate::<Vec4, _>(domain_4d, neighbors_4d, 12, 3..=3, 2..=3);
+    simulate::<Vec4, _, _>(domain_4d, neighbors_4d, 12, rules);
 }

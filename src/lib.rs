@@ -9,6 +9,8 @@ lalrpop_mod!(pub bag_grammar);
 lalrpop_mod!(pub asm_grammar);
 lalrpop_mod!(pub bitmask_grammar);
 lalrpop_mod!(pub badmath_grammar);
+lalrpop_mod!(pub message_grammar);
+lalrpop_mod!(pub test_grammar);
 pub mod passport {
     #[derive(Debug)]
     pub enum LenUnit {
@@ -61,6 +63,20 @@ pub mod badmath {
     }
 }
 
+pub mod message {
+    #[derive(Debug, Clone)]
+    pub enum Element {
+        Rule(i64, Node),
+        Message(String),
+    }
+    #[derive(Debug, Clone)]
+    pub enum Node {
+        Seq(Vec<i64>),
+        Or(Box<Node>, Box<Node>),
+        String(String),
+    }
+}
+
 use std::{io::BufRead, iter::FromIterator};
 pub fn map_input_vec<F, B>(f: F) -> Vec<B>
 where
@@ -79,6 +95,22 @@ where
         .lines()
         .map(|line| f(line.unwrap()))
         .collect()
+}
+
+pub fn semicolonized_input() -> String {
+    // add semicolon after each line -> helps to make some languages LR(1) parsable
+    // inspired by go...
+    let mut code = String::new();
+
+    for line in std::io::stdin().lock().lines() {
+        let line = line.unwrap();
+        if line.is_empty() {
+            continue;
+        }
+        code.push_str(&format!("{};\n", line));
+    }
+    // println!("rewritten code: {}", code);
+    code
 }
 
 pub mod math {

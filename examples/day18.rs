@@ -10,18 +10,23 @@ fn eval(t: &Term) -> i64 {
         _ => panic!("unhandled"),
     }
 }
-fn main() {
-    let mut code = String::new();
-    std::io::stdin().lock().read_to_string(&mut code).unwrap();
 
-    let terms: Vec<Term> = badmath_grammar::TermsParser::new()
-        .parse(&code[..])
-        .unwrap();
-
-    println!("{:?}", terms);
+fn run(terms: &[Term]) {
+    // println!("{:?}", terms);
     for term in terms.iter() {
         println!("term: {:?} -> {}", term, eval(term));
     }
 
     println!("sum: {}", terms.iter().map(|t| eval(t)).sum::<i64>());
+}
+fn main() {
+    let mut code = String::new();
+    std::io::stdin().lock().read_to_string(&mut code).unwrap();
+
+    run(&badmath_grammar::V1TermsParser::new()
+        .parse(&code[..])
+        .unwrap());
+    run(&badmath_grammar::V2TermsParser::new()
+        .parse(&code[..])
+        .unwrap());
 }
