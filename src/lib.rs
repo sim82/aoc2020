@@ -11,6 +11,7 @@ lalrpop_mod!(pub bitmask_grammar);
 lalrpop_mod!(pub badmath_grammar);
 lalrpop_mod!(pub message_grammar);
 lalrpop_mod!(pub test_grammar);
+lalrpop_mod!(pub ingredients_grammar);
 pub mod passport {
     #[derive(Debug)]
     pub enum LenUnit {

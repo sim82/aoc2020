@@ -1,0 +1,20 @@
+grammar;
+
+pub List = Product*;
+
+pub Product = <Ingredients> <Allergens>;
+Ingredients = String*;
+Allergens = "(" "contains" <Comma<String>> ")";
+
+String: String = <s:r"[a-z]+"> => s.into();
+
+Comma<T>: Vec<T> = { // (1)
+    <v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
