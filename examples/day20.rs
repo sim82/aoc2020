@@ -23,7 +23,6 @@ fn parse_slice(s: &str) -> u16 {
 #[derive(Debug)]
 struct Tile {
     id: i64,
-    edge_pattern: [u16; 4],
     edge_ids: [u16; 4],
     neighbors: [Option<i64>; 4],
     lines: Vec<Vec<bool>>,
@@ -31,9 +30,6 @@ struct Tile {
 
 impl Tile {
     fn new(id: i64, lines: &[String]) -> Self {
-        let edge_pattern = [0; 4];
-        let edge_ids = [0; 4];
-
         let top = parse_slice(lines.first().unwrap());
         let bottom = parse_slice(lines.last().unwrap());
         let left = parse_slice(
@@ -50,7 +46,6 @@ impl Tile {
         );
         Tile {
             id,
-            edge_pattern: [top, bottom, left, right],
             edge_ids: [r10id(top), r10id(bottom), r10id(left), r10id(right)],
             neighbors: [None; 4],
             lines: lines
@@ -65,11 +60,9 @@ impl Tile {
     }
     fn is_outer(&self) -> bool {
         self.neighbors.iter().filter_map(|f| *f).count() == 3
-        // self.neighbors.len() == 3
     }
     fn is_inner(&self) -> bool {
         self.neighbors.iter().filter_map(|f| *f).count() == 4
-        // self.neighbors.len() == 4
     }
     fn edge_id_set(&self) -> HashSet<u16> {
         self.edge_ids.iter().cloned().collect::<HashSet<_>>()
@@ -144,7 +137,8 @@ impl Edge {
         }
     }
 }
-
+// resolve pair of (start edge->goal edge) pairs to sequence of flips
+// all rotations/flips can be achieved by at most 3 flips along x/y/diagonal axis
 fn rotate_to(mut s0: Edge, e0: Edge, mut s1: Edge, e1: Edge) -> Vec<Axis> {
     if s0.main_axis() == s1.main_axis() || e0.main_axis() == e1.main_axis() {
         return vec![];
@@ -168,6 +162,7 @@ fn rotate_to(mut s0: Edge, e0: Edge, mut s1: Edge, e1: Edge) -> Vec<Axis> {
     ret
 }
 
+// apply flip sequnce to [top,bottom,left,right] array
 fn apply_flips<T: Copy>(mut a: [T; 4], flips: &Vec<Axis>) -> [T; 4] {
     for flip in flips {
         a = match flip {
@@ -179,6 +174,7 @@ fn apply_flips<T: Copy>(mut a: [T; 4], flips: &Vec<Axis>) -> [T; 4] {
     a
 }
 
+// apply flip sequence to quadratic 2d bitmap
 fn apply_flips_image(mut image: Vec<Vec<bool>>, flips: &Vec<Axis>) -> Vec<Vec<bool>> {
     for flip in flips {
         match flip {
@@ -222,15 +218,16 @@ fn main() {
             let title = tile.first().unwrap();
             assert!(title.starts_with("Tile"));
             let tileid: i64 = title[5..9].parse().unwrap();
-            println!("tile: {:?} {:?}", tile, Tile::new(tileid, &tile[1..]));
+            // println!("tile: {:?} {:?}", tile, Tile::new(tileid, &tile[1..]));
             Tile::new(tileid, &tile[1..])
         })
         .collect::<Vec<_>>();
 
     {
+        // resolve neighbors according to edge ids
         let edge_id_map = tiles
             .iter()
-            .flat_map(|tile| tile.edge_pattern.iter().map(move |p| (r10id(*p), tile.id)))
+            .flat_map(|tile| tile.edge_ids.iter().map(move |p| (*p, tile.id)))
             .collect::<MultiMap<_, _>>();
         println!("edge id map: {:?}", edge_id_map);
 
@@ -248,20 +245,16 @@ fn main() {
         .map(|tile| (tile.id, tile))
         .collect::<HashMap<_, _>>();
 
-    let res: i64 = tiles
-        .iter()
-        .filter(|t| t.is_corner())
-        .map(|t| t.id)
-        .product();
-
     let corners = tiles.iter().filter(|t| t.is_corner()).collect::<Vec<_>>();
     let outer = tiles.iter().filter(|t| t.is_outer()).collect::<Vec<_>>();
 
     let edge_len = outer.len() / 4 + 2;
     assert!(edge_len * edge_len == tiles.len());
 
-    println!("res: {}", res);
+    // part1 solutions
+    println!("res: {}", corners.iter().map(|t| t.id).product::<i64>());
 
+    // hard part: resolve actual positions / flips
     // collect known flips by tile.id
     let mut tile_flips = HashMap::<i64, Vec<Axis>>::new();
     // assigned tiles by x,y pos
@@ -269,16 +262,9 @@ fn main() {
     // set of tiles for which assignment / flips have been resolved
     let mut closed = HashSet::new();
 
-    // choose arbitrary corner piece to start
+    // choose arbitrary corner piece as 'upper_left'
     let upper_left = corners[0];
-    println!(
-        "neighbors: {:?}",
-        &upper_left
-            .neighbors
-            .iter()
-            .map(|n| n.is_none())
-            .collect::<Vec<_>>()[0..4]
-    );
+
     // rotate open edges of start tile to top/left
     let open_edges = upper_left
         .neighbors
@@ -292,7 +278,7 @@ fn main() {
             }
         })
         .collect::<Vec<_>>();
-
+    assert!(open_edges.len() == 2);
     println!("open edges: {:?} {:?}", upper_left, open_edges);
     tile_flips.insert(
         upper_left.id,
@@ -302,6 +288,13 @@ fn main() {
     assignment.insert(Vec2(0, 0), upper_left);
 
     // expand solution along outer edges starting from corner
+    // result (x = assigned tiles):
+    // Xxxxxxxx
+    // x.......
+    // x.......
+    // x.......
+    // x.......
+    // x.......
     for axis in [Axis::X, Axis::Y].iter() {
         let dir = match axis {
             Axis::X => Vec2(1, 0),
@@ -366,14 +359,17 @@ fn main() {
                 cur_tile.id,
                 rotate_to(to_trailing, trailing_edge, to_open, open_edge),
             );
-
-            // println!("{:?} {}", dir * i, cur_tile.id);
-            // println!("next: {}", cur_tile.id);
-            // break;
         }
     }
 
     // assign remaining tiles to positions and flips, using the known tile above and left
+    // (x/o = previously assigned, c = current_tile, - = left_tile, | = top_tile)
+    // Xxxxxxxx
+    // xooo|ooo
+    // xoo-c...
+    // x.......
+    // x.......
+    // x.......
     for y in 1..(edge_len as i32) {
         for x in 1..(edge_len as i32) {
             let pos = Vec2(x, y);
