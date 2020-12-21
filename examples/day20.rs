@@ -177,8 +177,8 @@ fn main() {
         println!("{:?} -> {}", pos, tile.id);
     }
     closed.clear();
-    for y in 1..11 {
-        for x in 1..11 {
+    for y in 1..(edge_len as i32 - 1) {
+        for x in 1..(edge_len as i32 - 1) {
             let pos = Vec2(x, y);
             let left = pos + Vec2(-1, 0);
             let down = pos + Vec2(0, -1);
