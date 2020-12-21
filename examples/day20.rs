@@ -10,6 +10,7 @@ fn reverse10(v: u16) -> u16 {
 }
 
 fn r10id(v: u16) -> u16 {
+    // 'r10id' => match bitpattern and its reverse onto same id
     v.min(reverse10(v))
 }
 
@@ -223,20 +224,18 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    {
-        // resolve neighbors according to edge ids
-        let edge_id_map = tiles
-            .iter()
-            .flat_map(|tile| tile.edge_ids.iter().map(move |p| (*p, tile.id)))
-            .collect::<MultiMap<_, _>>();
-        println!("edge id map: {:?}", edge_id_map);
+    // resolve neighbors according to edge ids
+    let edge_id_map = tiles
+        .iter()
+        .flat_map(|tile| tile.edge_ids.iter().map(move |p| (*p, tile.id)))
+        .collect::<MultiMap<_, _>>();
+    println!("edge id map: {:?}", edge_id_map);
 
-        for tile in tiles.iter_mut() {
-            for (i, edge_id) in tile.edge_ids.iter().enumerate() {
-                let ns = edge_id_map.get_vec(edge_id).unwrap();
-                if ns.len() == 2 {
-                    tile.neighbors[i] = Some(if tile.id == ns[0] { ns[1] } else { ns[0] });
-                }
+    for tile in tiles.iter_mut() {
+        for (i, edge_id) in tile.edge_ids.iter().enumerate() {
+            let ns = edge_id_map.get_vec(edge_id).unwrap();
+            if ns.len() == 2 {
+                tile.neighbors[i] = Some(if tile.id == ns[0] { ns[1] } else { ns[0] });
             }
         }
     }
@@ -380,55 +379,60 @@ fn main() {
             let left_tile = assignment[&left];
             let top_tile = assignment[&top];
 
-            let left_edges = left_tile.edge_id_set();
-            let top_edges = top_tile.edge_id_set();
+            let left_edges_flipped = apply_flips(left_tile.edge_ids, &tile_flips[&left_tile.id]);
+            let top_edges_flipped = apply_flips(top_tile.edge_ids, &tile_flips[&top_tile.id]);
 
+            let left_edge = left_edges_flipped[Edge::Right.into_index()];
+            let top_edge = top_edges_flipped[Edge::Bottom.into_index()];
+
+            // next_tile: common neighbor of left & top in right & down directions
+            let mut tile_iter = edge_id_map
+                .get_vec(&left_edge)
+                .unwrap()
+                .iter()
+                .chain(edge_id_map.get_vec(&top_edge).unwrap().iter())
+                .filter(|id| **id != left_tile.id && **id != top_tile.id);
+
+            let next_tile = *tile_iter.nth(0).unwrap();
+            assert!(*tile_iter.nth(0).unwrap() == next_tile); // sanity check: next_tile must be returned twice (and notthing else)
+            assert!(tile_iter.count() == 0);
             // this might be refined since we already know the correct flips of top & left
-            let edge_set = left_edges
-                .union(&top_edges)
-                .cloned()
-                .collect::<HashSet<_>>();
-
-            for tile in tiles.iter() {
-                // determine non-closed tile that shares two edges with top & left
-                if !closed.contains(&tile.id)
-                    && edge_set.intersection(&tile.edge_id_set()).count() == 2
-                {
-                    // determine which edge should point up (i.e. which of its neighbors is the top tile)
-                    let to_top = Edge::from_index(
-                        tile.neighbors
-                            .iter()
-                            .position(|n| match n {
-                                Some(n) => *n == top_tile.id,
-                                None => false,
-                            })
-                            .unwrap(),
-                    );
-                    // determine which edge should point left (i.e. which of its neighbors is the left tile)
-                    let to_left = Edge::from_index(
-                        tile.neighbors
-                            .iter()
-                            .position(|n| match n {
-                                Some(n) => *n == left_tile.id,
-                                None => false,
-                            })
-                            .unwrap(),
-                    );
-                    // resolve flips
-                    let flips = rotate_to(to_top, Edge::Top, to_left, Edge::Left);
-                    // println!("next: {:?} {:?} {:?}", pos, tile, flips);
-                    tile_flips.insert(tile.id, flips);
-                    assignment.insert(pos, tile);
-                    closed.insert(tile.id);
-                    break;
-                }
-            }
+            //
+            let next_tile = id_map[&next_tile];
+            // determine which edge should point up (i.e. which of its neighbors is the top tile)
+            let to_top = Edge::from_index(
+                next_tile
+                    .neighbors
+                    .iter()
+                    .position(|n| match n {
+                        Some(n) => *n == top_tile.id,
+                        None => false,
+                    })
+                    .unwrap(),
+            );
+            // determine which edge should point left (i.e. which of its neighbors is the left tile)
+            let to_left = Edge::from_index(
+                next_tile
+                    .neighbors
+                    .iter()
+                    .position(|n| match n {
+                        Some(n) => *n == left_tile.id,
+                        None => false,
+                    })
+                    .unwrap(),
+            );
+            // resolve flips
+            let flips = rotate_to(to_top, Edge::Top, to_left, Edge::Left);
+            tile_flips.insert(next_tile.id, flips);
+            assignment.insert(pos, next_tile);
+            closed.insert(next_tile.id);
         }
     }
 
-    // re-create image
+    // re-assemble image
+    // keep up the good tradition to store bitmaps in a HashSet (2d arrays stink)
+    // also makes matching of the monster pattern trivial...
     let mut out_image = HashSet::<Vec2>::new();
-    // let mut out_image2: Vec<Vec<bool>> = vec![vec![false]];
     for y in 0..(edge_len as i32) {
         for x in 0..(edge_len as i32) {
             let pos = Vec2(x, y);
@@ -533,7 +537,6 @@ fn main() {
 }
 
 fn print_field(out_image: &HashSet<Vec2>) {
-    // keep up the good tradition to store bitmaps in a HashSet (2d arrays stink...)
     let maxx = out_image.iter().map(|v| v.x()).max().unwrap();
     let maxy = out_image.iter().map(|v| v.y()).max().unwrap();
     for y in 0..=maxy {
