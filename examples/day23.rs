@@ -1,50 +1,73 @@
-fn main() {
-    // let input = "685974213";
-    let input = "389125467";
-    let mut input: Vec<i32> = input
-        .chars()
-        .map(|c| c.to_string().parse().unwrap())
-        .collect();
+#![feature(linked_list_cursors)]
+use std::collections::LinkedList;
 
-    let max = *input.iter().max().unwrap();
+fn print_list(list: &[usize]) {
+    let mut cur = list[0];
 
-    let new_max = 20;
-    for i in max..=new_max {
-        input.push(i);
+    loop {
+        print!("{}", cur);
+        cur = list[cur];
+        if cur == list[0] {
+            println!("");
+            break;
+        }
     }
-    let max = new_max;
+}
+fn main() {
+    let input = "685974213";
+    // let input = "389125467";
 
-    for i in 0..100 {
-        if i % 10000 == 0 {
-            println!("{}", i);
-        }
-        let current = *input.iter().nth(0).unwrap();
-        let mut target = current - 1;
-        if target == 0 {
-            target = max;
-        }
-        let remove = input.iter().skip(1).take(3).cloned().collect::<Vec<_>>();
+    let mut list = vec![0usize; 1000001];
+    let mut last = 0;
+    let mut max = 0;
+    let extend = 1000000;
+    for i in input
+        .chars()
+        .map(|c| c.to_string().parse::<usize>().unwrap())
+        .chain(10..=extend)
+    {
+        list[last] = i;
+        last = i;
+        max = max.max(i);
+    }
 
-        while remove.contains(&target) {
-            target -= 1;
-            if target == 0 {
-                target = max;
+    list[last] = list[0];
+
+    // print_list(&list);
+    let n = 10000000;
+    for _ in 0..n {
+        let cur = list[0]; // head
+        let rs = list[cur]; // first of three elements to be removed
+        let rm = list[rs];
+        let re = list[rm]; // last of three elements to be removed
+        let sn = list[re]; // first of remaining list
+
+        // println!("rs: {} re: {} sn: {}", rs, re, sn);
+
+        // find new insertion position
+        let mut ins = cur - 1;
+        if ins == 0 {
+            ins = max;
+        }
+        while [rs, rm, re].contains(&ins) {
+            ins -= 1;
+            if ins == 0 {
+                ins = max;
             }
         }
-        let target_pos = input.iter().position(|x| *x == target).unwrap();
-        // println!("remove: {:?} target {}", remove, target);
+        // re-twiddle list
+        list[0] = sn; // new head of list
+        list[cur] = sn; // old head goes to end => points to new head (keep list circular)
 
-        let skip_to_insert = target_pos - 4;
-        let pre = input.iter().skip(4).take(skip_to_insert + 1);
-        let post = input
-            .iter()
-            .skip(4 + skip_to_insert + 1)
-            .cloned()
-            .chain(std::iter::once(current));
-        let new: Vec<_> = pre.chain(remove.iter()).cloned().chain(post).collect();
-
-        println!("new:\n{:?} -> {:?}", input, new);
-        input = new;
+        // splice in 'removed' after ins (to form ins -> rs -> rm -> re -> ins+1)
+        list[re] = list[ins];
+        list[ins] = rs;
+        // print_list(&list);
     }
-    // .chain(remove.iter()).
+    println!(
+        "1: {} {} {}",
+        list[1],
+        list[list[1]],
+        list[1] * list[list[1]]
+    );
 }
