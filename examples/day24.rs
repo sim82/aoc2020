@@ -3,25 +3,16 @@ use std::{collections::HashSet, io::BufRead};
 use aoc2020::math::Vec2;
 
 fn adjacent(v: &Vec2) -> Vec<Vec2> {
-    let mut d = if v.y() % 2 == 0 {
-        vec![
-            Vec2(1, 0),
-            Vec2(-1, 0),
-            Vec2(-1, 1),
-            Vec2(0, 1),
-            Vec2(-1, -1),
-            Vec2(0, -1),
-        ]
-    } else {
-        vec![
-            Vec2(1, 0),
-            Vec2(-1, 0),
-            Vec2(0, 1),
-            Vec2(1, 1),
-            Vec2(0, -1),
-            Vec2(1, -1),
-        ]
-    };
+    let xshift = v.y().abs() % 2;
+    let mut d = vec![
+        Vec2(1, 0),
+        Vec2(-1, 0),
+        Vec2(-1 + xshift, 1),
+        Vec2(0 + xshift, 1),
+        Vec2(-1 + xshift, -1),
+        Vec2(0 + xshift, -1),
+    ];
+
     d.iter_mut().for_each(|f| *f = *f + *v);
     d
 }
