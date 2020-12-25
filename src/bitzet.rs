@@ -1,12 +1,17 @@
+use std::iter::FromIterator;
+
 use crate::math::Vec2;
 use bitset_core::BitSet;
-
+const N: usize = 1024 * 2;
+#[derive(Clone)]
 pub struct Bitzet {
-    quadrants: [[u32; 1024]; 4],
+    quadrants: [[u32; N]; 4],
+    max: [usize; 4],
 }
 
 pub struct ZOrderIterator<'a> {
     z: usize,
+    quadrant: usize,
     s: &'a Bitzet,
 }
 
@@ -14,30 +19,109 @@ impl<'a> Iterator for ZOrderIterator<'a> {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let num_bits = self.s.quadrants[0].len() * 32;
-        while self.z < num_bits && !self.s.quadrants[0].bit_test(self.z) {
+        loop {
+            if self.quadrant >= 4 {
+                return None;
+            }
+            if self.z > self.s.max[self.quadrant] {
+                self.quadrant += 1;
+                self.z = 0;
+                continue;
+            }
+            if self.s.quadrants[self.quadrant].bit_test(self.z) {
+                break;
+            }
             self.z += 1;
         }
-        if self.z >= num_bits {
-            return None;
-        }
-        let ret = zinv(self.z as u32);
+        let ret = zinv2(self.z as u32);
         self.z += 1;
-        Some(ret)
+        match self.quadrant {
+            0 => Some(Vec2(ret.0, ret.1)),
+            1 => Some(Vec2(-ret.0, ret.1)),
+            2 => Some(Vec2(ret.0, -ret.1)),
+            3 => Some(Vec2(-ret.0, -ret.1)),
+            _ => None,
+        }
     }
+}
+
+impl FromIterator<Vec2> for Bitzet {
+    fn from_iter<T: IntoIterator<Item = Vec2>>(iter: T) -> Self {
+        let mut bz = Bitzet::new();
+        iter.into_iter().for_each(|v| bz.insert(v));
+        bz
+    }
+}
+#[test]
+fn test_iter_basic() {
+    let mut bs = Bitzet::new();
+    bs.insert(Vec2(1, 1));
+    bs.insert(Vec2(2, 1));
+    bs.insert(Vec2(3, 1));
+
+    let mut bs2 = Bitzet::new();
+    bs2.insert(Vec2(2, 1));
+    let bs3 = bs.difference(&bs2);
+    let s = bs3.iter().collect::<Vec<_>>();
+    println!("s: {:?}", s);
+}
+
+#[test]
+fn test_iter_4q() {
+    let mut bs = Bitzet::new();
+    bs.insert(Vec2(1, 1));
+    bs.insert(Vec2(2, 1));
+    bs.insert(Vec2(3, 1));
+
+    bs.insert(Vec2(-5, 2));
+    bs.insert(Vec2(3, -7));
+    bs.insert(Vec2(-12, -13));
+
+    bs.insert(Vec2(-5, 1));
+    bs.insert(Vec2(2, -7));
+    bs.insert(Vec2(-11, -13));
+
+    let mut bs2 = Bitzet::new();
+    bs2.insert(Vec2(2, 1));
+    bs2.insert(Vec2(-5, 2));
+    bs2.insert(Vec2(3, -7));
+    bs2.insert(Vec2(-12, -13));
+    let bs3 = bs.difference(&bs2);
+    let s = bs3.iter().collect::<Vec<_>>();
+    println!("s: {:?}", s);
 }
 
 impl Bitzet {
     pub fn new() -> Bitzet {
         Bitzet {
-            quadrants: [[0; 1024]; 4],
+            quadrants: [[0; N]; 4],
+            max: [0; 4],
         }
     }
     pub fn insert(&mut self, v: Vec2) {
-        self.quadrants[quadrant_index(&v)].bit_set(zorder_abs(&v));
+        let z = zorder_abs(&v);
+        let q = quadrant_index(&v);
+        self.quadrants[q].bit_set(z);
+        self.max[q] = self.max[q].max(z);
+    }
+    pub fn remove(&mut self, v: &Vec2) {
+        self.quadrants[quadrant_index(&v)].bit_reset(zorder_abs(&v));
     }
     pub fn get(&self, v: &Vec2) -> bool {
         self.quadrants[quadrant_index(&v)].bit_test(zorder_abs(v))
+    }
+    pub fn contains(&self, v: &Vec2) -> bool {
+        // println!("contains: {:?}", v);
+        self.get(v)
+    }
+    pub fn len(&self) -> usize {
+        self.quadrants
+            .iter()
+            .zip(self.max.iter())
+            .map(|(q, max)| q[0..=(max / 32)].bit_count())
+            .sum::<usize>()
+
+        // self.quadrants.iter().map(|q| q.bit_count()).sum::<usize>()
     }
     pub fn difference(&self, other: &Self) -> Self {
         let mut q0 = self.quadrants[0].clone();
@@ -51,11 +135,35 @@ impl Bitzet {
 
         Bitzet {
             quadrants: [q0, q1, q2, q3],
+            max: self.max.clone(),
         }
     }
     pub fn iter<'a>(&'a self) -> ZOrderIterator<'a> {
-        ZOrderIterator { s: self, z: 0 }
+        ZOrderIterator {
+            s: self,
+            quadrant: 0,
+            z: 0,
+        }
     }
+}
+
+#[test]
+fn test_len() {
+    println!("z: {}", zorder3(255, 255));
+    let bz = [
+        Vec2(1, 1),
+        Vec2(255, 255),
+        Vec2(-1, 1),
+        Vec2(-255, 255),
+        Vec2(1, -1),
+        Vec2(255, -255),
+        Vec2(-1, -1),
+        Vec2(-255, -255),
+    ]
+    .iter()
+    .cloned()
+    .collect::<Bitzet>();
+    assert_eq!(bz.len(), 8);
 }
 fn quadrant_index(v: &Vec2) -> usize {
     let xneg = if v.x() < 0 { 1 } else { 0 };
@@ -63,7 +171,7 @@ fn quadrant_index(v: &Vec2) -> usize {
     yneg * 2 + xneg
 }
 fn zorder_abs(v: &Vec2) -> usize {
-    zorder2(v.x().abs() as u32, v.y().abs() as u32)
+    zorder3(v.x().abs() as u32, v.y().abs() as u32) as usize
 }
 fn zorder2(mut x: u32, mut y: u32) -> usize {
     let mut rout: usize = 0;
@@ -124,20 +232,6 @@ fn zorder3_test() {
     assert_eq!(zorder3(3, 5), 0b100111);
     assert_eq!(zorder3(6, 2), 0b011100);
     assert_eq!(zorder3(7, 7), 0b111111);
-}
-
-#[test]
-fn basic() {
-    let mut bs = Bitzet::new();
-    bs.insert(Vec2(1, 1));
-    bs.insert(Vec2(2, 1));
-    bs.insert(Vec2(3, 1));
-
-    let mut bs2 = Bitzet::new();
-    bs2.insert(Vec2(2, 1));
-    let bs3 = bs.difference(&bs2);
-    let s = bs3.iter().collect::<Vec<_>>();
-    println!("s: {:?}", s);
 }
 
 fn zinv(mut z: u32) -> Vec2 {

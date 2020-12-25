@@ -78,7 +78,7 @@ fn main() {
     }
     println!("len: {}", black.len());
 
-    for i in 1..=100 {
+    for i in 1..=200 {
         let mut black_new = HashSet::new();
 
         for v in black.iter() {
