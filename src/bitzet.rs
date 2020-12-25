@@ -89,12 +89,41 @@ fn zorder2(mut x: u32, mut y: u32) -> usize {
     out
 }
 
+fn zorder3(mut x: u32, mut y: u32) -> u32 {
+    const B: [u32; 4] = [0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF];
+    const S: [u32; 4] = [1, 2, 4, 8];
+
+    // Interleave lower 16 bits of x and y, so the bits of x
+    // are in the even positions and bits from y in the odd;
+    // z gets the resulting 32-bit Morton Number.
+    // x and y must initially be less than 65536.
+
+    x = (x | (x << S[3])) & B[3];
+    x = (x | (x << S[2])) & B[2];
+    x = (x | (x << S[1])) & B[1];
+    x = (x | (x << S[0])) & B[0];
+
+    y = (y | (y << S[3])) & B[3];
+    y = (y | (y << S[2])) & B[2];
+    y = (y | (y << S[1])) & B[1];
+    y = (y | (y << S[0])) & B[0];
+
+    x | (y << 1)
+}
 #[test]
 fn zorder2_test() {
     assert_eq!(zorder2(0, 0), 0);
     assert_eq!(zorder2(3, 5), 0b100111);
     assert_eq!(zorder2(6, 2), 0b011100);
     assert_eq!(zorder2(7, 7), 0b111111);
+}
+
+#[test]
+fn zorder3_test() {
+    assert_eq!(zorder3(0, 0), 0);
+    assert_eq!(zorder3(3, 5), 0b100111);
+    assert_eq!(zorder3(6, 2), 0b011100);
+    assert_eq!(zorder3(7, 7), 0b111111);
 }
 
 #[test]
@@ -124,6 +153,22 @@ fn zinv(mut z: u32) -> Vec2 {
     Vec2(x as i32, y as i32)
 }
 
+fn zinv2(z: u32) -> Vec2 {
+    let mut x = z & 0x55555555;
+    x = (x | (x >> 1)) & 0x33333333;
+    x = (x | (x >> 2)) & 0x0F0F0F0F;
+    x = (x | (x >> 4)) & 0x00FF00FF;
+    x = (x | (x >> 8)) & 0x0000FFFF;
+
+    let mut y = (z >> 1) & 0x55555555;
+    y = (y | (y >> 1)) & 0x33333333;
+    y = (y | (y >> 2)) & 0x0F0F0F0F;
+    y = (y | (y >> 4)) & 0x00FF00FF;
+    y = (y | (y >> 8)) & 0x0000FFFF;
+
+    Vec2(x as i32, y as i32)
+}
+
 #[test]
 fn test_zinv() {
     assert_eq!(zinv(0b0), Vec2(0, 0));
@@ -131,6 +176,25 @@ fn test_zinv() {
     assert_eq!(zinv(0b111101), Vec2(0b111, 0b110));
 
     let v = zinv(0b111100);
+    println!("{:b} {:b}", v.x(), v.y());
+}
+
+#[test]
+fn test_zinv2() {
+    assert_eq!(zinv2(0b0), Vec2(0, 0));
+    assert_eq!(zinv2(0b100110), Vec2(0b10, 0b101));
+    assert_eq!(zinv2(0b111101), Vec2(0b111, 0b110));
+
+    assert_eq!(
+        zinv2(0b01010101010101010101010101010101),
+        Vec2(0b1111111111111111, 0b0)
+    );
+
+    assert_eq!(
+        zinv2(0b10101010101010101010101010101010),
+        Vec2(0b0, 0b1111111111111111)
+    );
+    let v = zinv2(0b111100);
     println!("{:b} {:b}", v.x(), v.y());
 }
 
